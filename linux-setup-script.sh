@@ -16,7 +16,7 @@ echo "Выберите способ установки KDE Plasma"
 case $choice in
         1)
             # Установка из репозитория
-            sudo pacman -S plasma
+            sudo pacman -S plasma --noconfirm
             if [ $? -eq 0 ]; then
                 echo "Установка KDE Plasma из репозитория завершена."
             else
@@ -64,7 +64,7 @@ echo "Выберите способ установки Gnome"
 case $choice in
         1)
             # Установка из репозитория
-            sudo pacman -S gnome
+            sudo pacman -S gnome --noconfirm
             if [ $? -eq 0 ]; then
                 echo "Установка Gnome из репозитория завершена."
             else
@@ -112,7 +112,7 @@ echo "Выберите способ установки XFCE"
 case $choice in
         1)
             # Установка из репозитория
-            sudo pacman -S xfce4
+            sudo pacman -S xfce4 --noconfirm
             if [ $? -eq 0 ]; then
                 echo "Установка XFCE из репозитория завершена."
             else
@@ -161,7 +161,7 @@ install_dev_packages() {
             return 1
         fi
     fi
-    yay -S github-desktop-bin visual-studio-code-bin
+    yay -S github-desktop-bin visual-studio-code-bin --noconfirm
     if [ $? -ne 0 ]; then
         echo "Ошибка при установке пакетов github-desktop-bin и visual-studio-code-bin."
     else
@@ -201,7 +201,7 @@ configure_pacman() {
     done
 
     # Обновление баз данных пакетов
-    sudo pacman -Sy
+    sudo pacman -Sy 
     echo "Настройка pacman.conf и обновление баз данных завершены."
 }
 
@@ -227,7 +227,7 @@ install_extra_packages() {
     fi
 
     # Установка пакетов
-    sudo pacman -S firefox ark dolphin htop audacious telegram-desktop cmake spotify-launcher discord gwenview steam wine wine-mono wine-gecko winetricks lib32-libpulse noto-fonts-cjk wget lib32-mesa obs-studio libva-utils
+    sudo pacman -S firefox ark dolphin htop audacious telegram-desktop cmake spotify-launcher discord gwenview steam wine wine-mono wine-gecko winetricks lib32-libpulse noto-fonts-cjk wget lib32-mesa obs-studio libva-utils --noconfirm
     echo "Установка дополнительных пакетов завершена."
 }
 
@@ -263,7 +263,7 @@ EOF
                 2)
                     # xf86-video-intel
                     # Установка xf86-video-intel
-                    sudo pacman -S xf86-video-intel
+                    sudo pacman -S xf86-video-intel --noconfirm
                     # Создание файла /etc/X11/xorg.conf.d/20-intel.conf
                     cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-intel.conf
 Section "Device"
@@ -292,7 +292,7 @@ EOF
             case $nvidia_driver_choice in
                 1)
                     # Nouveau
-                    sudo pacman -S xf86-video-nouveau
+                    sudo pacman -S xf86-video-nouveau --noconfirm
                     cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-nouveau.conf
 Section "Device"
     Identifier "Nvidia card"
@@ -312,11 +312,11 @@ EOF
                     case $nvidia_version_choice in
                         1)
                             # nvidia
-                            sudo pacman -S nvidia
+                            sudo pacman -S nvidia --noconfirm
                             ;;
                         2)
                             # nvidia-open
-                            sudo pacman -S nvidia-open
+                            sudo pacman -S nvidia-open --noconfirm
                             ;;
                         3)
                             # nvidia-470xx-dkms (AUR)
@@ -328,7 +328,7 @@ EOF
                                     return 1
                                 fi
                             fi
-                            yay -S nvidia-470xx-dkms
+                            yay -S nvidia-470xx-dkms --noconfirm
                             ;;
                         4)
                             # nvidia-390xx-dkms (AUR)
@@ -340,7 +340,7 @@ EOF
                                     return 1
                                 fi
                             fi
-                            yay -S nvidia-390xx-dkms
+                            yay -S nvidia-390xx-dkms --noconfirm
                             ;;
                         *)
                             echo "Неверный выбор версии драйвера NVIDIA."
@@ -373,7 +373,7 @@ EOF
             case $amd_driver_choice in
                 1)
                     # AMDGPU
-                    sudo pacman -S xf86-video-amdgpu
+                    sudo pacman -S xf86-video-amdgpu --noconfirm
                     cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
 Section "OutputClass"
      Identifier "AMD"
@@ -385,7 +385,7 @@ EOF
                     ;;
                 2)
                     # ATI
-                    sudo pacman -S xf86-video-ati
+                    sudo pacman -S xf86-video-ati --noconfirm
                     cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-radeon.conf
 Section "OutputClass"
     Identifier "Radeon"
@@ -397,7 +397,7 @@ EOF
                     ;;
                 3)
                     # AMDGPU PRO
-                    sudo pacman -S xf86-video-amdgpu
+                    sudo pacman -S xf86-video-amdgpu --noconfirm
                     cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
 Section "OutputClass"
      Identifier "AMD"
@@ -427,22 +427,48 @@ EOF
 
 # Функция для сборки yay
 build_yay() {
-    if [ -d "files/yay" ]; then
-    cd files/yay
-    makepkg -si
-    if [ $? -eq 0 ]; then # Проверяем, успешно ли выполнен makepkg
+    # Проверяем наличие git
+    if ! command -v git &> /dev/null; then
+        echo "Git не установлен. Устанавливаем git..."
+        sudo pacman -S git --noconfirm
+        if [ $? -ne 0 ]; then
+            echo "Ошибка при установке git."
+            return 1
+        fi
+        echo "Git установлен."
+    fi
+
+    # Проверяем наличие директории files
+    if [ ! -d "files" ]; then
+        mkdir -p files
+    fi
+    cd files
+
+    # Клонируем репозиторий yay
+    git clone https://aur.archlinux.org/yay.git
+
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при клонировании репозитория yay."
+        cd "$ORIGINAL_DIR"
+        return 1
+    fi
+
+    cd yay
+
+    # Собираем и устанавливаем yay
+    makepkg -si --noconfirm
+
+    if [ $? -eq 0 ]; then
         echo "Сборка пакета yay завершена."
     else
         echo "Ошибка при сборке yay."
+        cd "$ORIGINAL_DIR"
+        return 1
     fi
+
     # Возвращаемся в исходную директорию
     cd "$ORIGINAL_DIR"
-else
-    echo "Директория 'yay' не найдена."
-
-fi
-
-echo "Сборка пакета yay завершена (если директория yay была найдена)."
+    echo "Сборка пакета yay завершена."
 }
 
 vaapi_configuration() {
@@ -471,7 +497,7 @@ vaapi_configuration() {
                     case $libva_choice in
                         1)
                             # Установка из репозитория
-                            sudo pacman -S libva-intel-driver
+                            sudo pacman -S libva-intel-driver --noconfirm
                             if [ $? -eq 0 ]; then
                                 echo "Установка libva-intel-driver из репозитория завершена."
                             else
@@ -536,7 +562,7 @@ vaapi_configuration() {
                     case $intel_media_choice in
                         1)
                             # Установка из репозитория
-                            sudo pacman -S intel-media-driver
+                            sudo pacman -S intel-media-driver --noconfirm
                             if [ $? -eq 0 ]; then
                                 echo "Установка intel-media-driver из репозитория завершена."
                             else
@@ -613,7 +639,7 @@ vaapi_configuration() {
                             return 1
                         fi
                     fi
-                    yay -S nouveau-fw
+                    yay -S nouveau-fw --noconfirm
                     if [ $? -eq 0 ]; then
                         echo "Установка nouveau-fw завершена."
                     else
@@ -645,7 +671,7 @@ vaapi_configuration() {
                             return 1
                         fi
                     fi
-                    yay -S amdgpu-pro-installer
+                    yay -S amdgpu-pro-installer --noconfirm
                     ;;
                 *)
                     echo "Неверный выбор драйвера AMD."
