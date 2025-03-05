@@ -172,9 +172,33 @@ install_dev_packages() {
 
 # Функция для настройки pacman.conf и обновления баз данных
 configure_pacman() {
-    # Раскомментирование multilib в /etc/pacman.conf
-    sudo sed -i 's/#\[multilib\]/\[multilib\]/' /etc/pacman.conf
-    sudo sed -i '/\[multilib\]/{n;s/#Include = \/etc\/pacman.d\/mirrorlist/Include = \/etc\/pacman.d\/mirrorlist/}' /etc/pacman.conf
+    # Выбор репозиториев
+    echo "Выберите репозитории для включения (введите номера через пробел):"
+    echo "1. core"
+    echo "2. extra"
+    echo "3. multilib"
+    echo "4. core-testing"
+    echo "5. extra-testing"
+    echo "6. multilib-testing"
+    read -p "Ваш выбор: " repo_choices
+
+    # Разбор введенных чисел
+    for choice in $repo_choices; do
+        case $choice in
+            1) repo="core";;
+            2) repo="extra";;
+            3) repo="multilib";;
+            4) repo="core-testing";;
+            5) repo="extra-testing";;
+            6) repo="multilib-testing";;
+            *) echo "Неверный выбор: $choice"; continue;;
+        esac
+
+        # Раскомментирование репозитория
+        sudo sed -i "s/#\[$repo\]/\[$repo\]/" /etc/pacman.conf
+        sudo sed -i "/\[$repo\]/{n;s/#Include = \/etc\/pacman.d\/mirrorlist/Include = \/etc\/pacman.d\/mirrorlist/}" /etc/pacman.conf
+        echo "Репозиторий $repo включен."
+    done
 
     # Обновление баз данных пакетов
     sudo pacman -Sy
