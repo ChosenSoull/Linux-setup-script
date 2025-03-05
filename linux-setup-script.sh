@@ -2,6 +2,9 @@
 
 # Сохраняем исходную директорию
 ORIGINAL_DIR=$(pwd)
+if [ ! -d "files" ]; then
+    mkdir files
+fi
 
 # Функция для установки пакетов из директории
 install_Plasma() {
@@ -24,7 +27,7 @@ case $choice in
         # Указываем директорию с пакетами
         PACKAGE_DIR="Plasma6.2.5"
             # Проверка, существует ли указанная папка
-            if [ ! -d "files/$PACKwAGE_DIR" ]; then
+            if [ ! -d "files/$PACKAGE_DIR" ]; then
                 echo "Ошибка: папка '$PACKAGE_DIR' не найдена."
                 return 1
             fi
@@ -220,47 +223,208 @@ build_yay() {
     cd "$ORIGINAL_DIR"
 else
     echo "Директория 'yay' не найдена."
+
 fi
 
 echo "Сборка пакета yay завершена (если директория yay была найдена)."
 }
 
-# Функция для сборки intel-vaapi-driver
 vaapi_configuration() {
-    echo "Выберите способ установки intel-vaapi-driver:"
-    echo "1. Установить из репозитория"
-    echo "2. Собрать из исходников"
-    read -p "Ваш выбор: " choice
+    echo "Выберите видеокарту:"
+    echo "1. Intel"
+    echo "2. NVIDIA"
+    echo "3. AMD"
+    read -p "Ваш выбор: " gpu_choice
 
-    case $choice in
+    case $gpu_choice in
         1)
-            # Установка из репозитория
-            sudo pacman -S libva-intel-driver
-            if [ $? -eq 0 ]; then
-                echo "Установка intel-vaapi-driver из репозитория завершена."
-            else
-                echo "Ошибка при установке intel-vaapi-driver из репозитория."
-            fi
+            # Intel VA-API
+            echo "Выберите драйвер Intel VA-API:"
+            echo "1. libva-intel-driver (для GMA 4500 и до Coffee Lake)"
+            echo "2. intel-media-driver (для Broadwell и новее)"
+            read -p "Ваш выбор: " intel_driver_choice
+
+            case $intel_driver_choice in
+                1)
+                    # libva-intel-driver
+                    echo "Выберите способ установки libva-intel-driver:"
+                    echo "1. Установить из репозитория"
+                    echo "2. Собрать из исходников"
+                    read -p "Ваш выбор: " libva_choice
+
+                    case $libva_choice in
+                        1)
+                            # Установка из репозитория
+                            sudo pacman -S libva-intel-driver
+                            if [ $? -eq 0 ]; then
+                                echo "Установка libva-intel-driver из репозитория завершена."
+                            else
+                                echo "Ошибка при установке libva-intel-driver из репозитория."
+                            fi
+                            ;;
+                        2)
+                            # Сборка из исходников
+                            if [ ! -d "files" ]; then
+                                echo "Директория 'files' не найдена. Поместите исходники в эту директорию."
+                                return 1
+                            fi
+                            cd files
+                            if [ ! -d "intel-vaapi-driver" ]; then
+                                git clone https://github.com/intel/intel-vaapi-driver.git
+                                if [ $? -ne 0 ]; then
+                                    echo "Ошибка при клонировании репозитория intel-vaapi-driver."
+                                    cd "$ORIGINAL_DIR"
+                                    return 1
+                                fi
+                            fi
+                            cd intel-vaapi-driver
+                            autoreconf -f -i
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении autoreconf."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            ./configure
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении configure."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            make
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении make."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            sudo make install
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении sudo make install."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            cd "$ORIGINAL_DIR"
+                            echo "Сборка и установка libva-intel-driver из исходников завершены."
+                            ;;
+                        *)
+                            echo "Неверный выбор способа установки libva-intel-driver."
+                            ;;
+                    esac # Закрываем блок case для libva_choice
+                    ;;
+                2)
+                    # intel-media-driver
+                    echo "Выберите способ установки intel-media-driver:"
+                    echo "1. Установить из репозитория"
+                    echo "2. Собрать из исходников"
+                    read -p "Ваш выбор: " intel_media_choice
+
+                    case $intel_media_choice in
+                        1)
+                            # Установка из репозитория
+                            sudo pacman -S intel-media-driver
+                            if [ $? -eq 0 ]; then
+                                echo "Установка intel-media-driver из репозитория завершена."
+                            else
+                                echo "Ошибка при установке intel-media-driver из репозитория."
+                            fi
+                            ;;
+                        2)
+                            # Сборка из исходников
+                            if [ ! -d "files" ]; then
+                                echo "Директория 'files' не найдена. Поместите исходники в эту директорию."
+                                return 1
+                            fi
+                            cd files
+                            if [ ! -d "media-driver" ]; then
+                                git clone https://github.com/intel/media-driver.git
+                                if [ $? -ne 0 ]; then
+                                    echo "Ошибка при клонировании репозитория media-driver."
+                                    cd "$ORIGINAL_DIR"
+                                    return 1
+                                fi
+                            fi
+                            sudo pacman -S intel-gmmlib cmake
+                            cd media-driver
+                            mkdir -p build_media
+                            cd build_media
+                            cmake ..
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении cmake."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            make -j"$(nproc)"
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении make."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            sudo make install
+                            if [ $? -ne 0 ]; then
+                                echo "Ошибка при выполнении sudo make install."
+                                cd "$ORIGINAL_DIR"
+                                return 1
+                            fi
+                            cd "$ORIGINAL_DIR"
+                            echo "Сборка и установка intel-media-driver из исходников завершены."
+                            ;;
+                        *)
+                            echo "Неверный выбор способа установки intel-media-driver."
+                            ;;
+                    esac # Закрываем блок case для intel_media_choice
+                    ;;
+                *)
+                    echo "Неверный выбор драйвера Intel VA-API."
+                    ;;
+            esac # Закрываем блок case для intel_driver_choice
             ;;
         2)
-            # Сборка из исходников
-            if [ ! -d "files/intel-vaapi-driver-2.4.1" ]; then
-                echo "Директория 'intel-vaapi-driver-2.4.1' не найдена. Поместите исходники в эту директорию."
-                return 1
+            # NVIDIA VA-API
+            if ! command -v yay &> /dev/null; then
+                echo "Yay не установлен. Попытка сборки..."
+                build_yay
+                if ! command -v yay &> /dev/null; then
+                    echo "Ошибка: не удалось установить yay."
+                    return 1
+                fi
             fi
+            yay -S nouveau-fw
+            if [ $? -eq 0 ]; then
+                echo "Установка nouveau-fw завершена."
+            else
+                echo "Ошибка при установке nouveau-fw."
+            fi
+            ;;
+        3)
+            # AMD VA-API
+            echo "AMD VA-API поддерживается в драйвере Mesa."
+            echo "Выберите драйвер AMD:"
+            echo "1. Остаться на открытом драйвере (Mesa)"
+            echo "2. Перейти на проприетарный драйвер AMDGPU PRO"
+            read -p "Ваш выбор: " amd_driver_choice
 
-            cd files/intel-vaapi-driver-2.4.1
-            autoreconf -f -i
-            ./configure
-            make
-            sudo make install
-            cd "$ORIGINAL_DIR"
-            echo "Сборка и установка intel-vaapi-driver из исходников завершены."
+            case $amd_driver_choice in
+                1)
+                    ;;
+                2)
+                    if ! command -v yay &> /dev/null; then
+                        echo "Yay не установлен. Попытка сборки..."
+                        build_yay
+                        if ! command -v yay &> /dev/null; then
+                            echo "Ошибка: не удалось установить yay."
+                            return 1
+                        fi
+                    fi
+                    yay -S amdgpu-pro-installer
+                    ;;
+                *)
+                    echo "Неверный выбор драйвера AMD."
+                    ;;
+            esac # Закрываем блок case для amd_driver_choice
             ;;
         *)
-            echo "Неверный выбор. Установка intel-vaapi-driver отменена."
+            echo "Неверный выбор видеокарты."
             ;;
-    esac
+    esac # Закрываем блок case для gpu_choice
 }
 
 # Меню выбора
