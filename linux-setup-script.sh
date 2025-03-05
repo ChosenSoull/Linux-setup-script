@@ -10,7 +10,7 @@ fi
 install_Plasma() {
 echo "Выберите способ установки KDE Plasma"
     echo "1. Установить из репозитория"
-    echo "2. Установить Plasma 6.2.5"
+    echo "2. Установить Plasma 6.2.5 (НЕРАБОТАЕТ)"
     read -p "Ваш выбор: " choice
 
 case $choice in
@@ -58,7 +58,7 @@ case $choice in
 install_Gnome() {
 echo "Выберите способ установки Gnome"
     echo "1. Установить из репозитория"
-    echo "2. Установить Gnome"
+    echo "2. Установить Gnome (НЕРАБОТАЕТ)"
     read -p "Ваш выбор: " choice
 
 case $choice in
@@ -106,7 +106,7 @@ case $choice in
 install_XFCE() {
 echo "Выберите способ установки XFCE"
     echo "1. Установить из репозитория"
-    echo "2. Установить XFCE"
+    echo "2. Установить XFCE (НЕРАБОТАЕТ)"
     read -p "Ваш выбор: " choice
 
 case $choice in
@@ -207,25 +207,217 @@ configure_pacman() {
 
 # Функция для установки дополнительных пакетов
 install_extra_packages() {
+    # Проверка наличия multilib в pacman.conf
+    if grep -q "^\[multilib\]" /etc/pacman.conf; then
+        echo "Репозиторий multilib включен."
+    else
+        echo "Репозиторий multilib не включен. Включить его? (y/n)"
+        read -r answer
+        if [[ "$answer" == "y" || "$answer" == "yes" ]]; then
+            # Раскомментирование multilib в /etc/pacman.conf
+            sudo sed -i 's/#\[multilib\]/\[multilib\]/' /etc/pacman.conf
+            sudo sed -i '/\[multilib\]/{n;s/#Include = \/etc\/pacman.d\/mirrorlist/Include = \/etc\/pacman.d\/mirrorlist/}' /etc/pacman.conf
+
+            # Обновление баз данных пакетов
+            sudo pacman -Sy
+            echo "Репозиторий multilib включен и базы данных обновлены."
+        else
+            echo "Установка пакетов, зависящих от multilib, будет пропущена."
+        fi
+    fi
+
+    # Установка пакетов
     sudo pacman -S firefox ark dolphin htop audacious telegram-desktop cmake spotify-launcher discord gwenview steam wine wine-mono wine-gecko winetricks lib32-libpulse noto-fonts-cjk wget lib32-mesa obs-studio libva-utils
     echo "Установка дополнительных пакетов завершена."
 }
 
 # Функция для настройки Xorg
 configure_xorg() {
-    # Установка xf86-video-intel
-    sudo pacman -S xf86-video-intel
-    # Создание файла /etc/X11/xorg.conf.d/20-intel.conf
-    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-intel.conf
+    echo "Выберите видеокарту:"
+    echo "1. Intel"
+    echo "2. NVIDIA"
+    echo "3. AMD"
+    read -p "Ваш выбор: " gpu_choice
+
+    case $gpu_choice in
+        1)
+            # Intel
+            echo "Выберите драйвер Intel:"
+            echo "1. modesetting (Рекомендуеться)" 
+            echo "2. xf86-video-intel"
+            read -p "Ваш выбор: " intel_driver_choice
+
+            case $intel_driver_choice in
+                1)
+                    # modesetting
+                    # Создание файла /etc/X11/xorg.conf.d/20-modesetting.conf 
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-modesetting.conf 
+Section "Device" 
+    Identifier "Intel Graphics" 
+    Driver "modesetting" 
+    Option "AccelMethod" "glamor" 
+    Option "DRI"  "3" 
+EndSection 
+EOF
+                    ;;
+                2)
+                    # xf86-video-intel
+                    # Установка xf86-video-intel
+                    sudo pacman -S xf86-video-intel
+                    # Создание файла /etc/X11/xorg.conf.d/20-intel.conf
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-intel.conf
 Section "Device"
     Identifier "Intel Graphics"
-    Driver "Intel"
+    Driver "intel"
     Option    "DRI"           "3"
     Option    "TearFree"      "false"
     Option    "TripleBuffer"  "false"
     Option    "SwapbuffersWait"    "false"
 EndSection
 EOF
+                    ;;
+                *)
+                    echo "Неверный выбор драйвера Intel."
+                    return 1
+                    ;;
+            esac
+            ;;
+        2)
+            # NVIDIA
+            echo "Выберите драйвер NVIDIA:"
+            echo "1. Nouveau (Открытый)"
+            echo "2. NVIDIA (Проприетарный)"
+            read -p "Ваш выбор: " nvidia_driver_choice
+
+            case $nvidia_driver_choice in
+                1)
+                    # Nouveau
+                    sudo pacman -S xf86-video-nouveau
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-nouveau.conf
+Section "Device"
+    Identifier "Nvidia card"
+    Driver "nouveau"
+EndSection
+EOF
+                    ;;
+                2)
+                    # NVIDIA
+                    echo "Выберите версию драйвера NVIDIA:"
+                    echo "1. nvidia"
+                    echo "2. nvidia-open"
+                    echo "3. nvidia-470xx-dkms (AUR)"
+                    echo "4. nvidia-390xx-dkms (AUR)"
+                    read -p "Ваш выбор: " nvidia_version_choice
+
+                    case $nvidia_version_choice in
+                        1)
+                            # nvidia
+                            sudo pacman -S nvidia
+                            ;;
+                        2)
+                            # nvidia-open
+                            sudo pacman -S nvidia-open
+                            ;;
+                        3)
+                            # nvidia-470xx-dkms (AUR)
+                            if ! command -v yay &> /dev/null; then
+                                echo "Yay не установлен. Попытка сборки..."
+                                build_yay
+                                if ! command -v yay &> /dev/null; then
+                                    echo "Ошибка: не удалось установить yay."
+                                    return 1
+                                fi
+                            fi
+                            yay -S nvidia-470xx-dkms
+                            ;;
+                        4)
+                            # nvidia-390xx-dkms (AUR)
+                            if ! command -v yay &> /dev/null; then
+                                echo "Yay не установлен. Попытка сборки..."
+                                build_yay
+                                if ! command -v yay &> /dev/null; then
+                                    echo "Ошибка: не удалось установить yay."
+                                    return 1
+                                fi
+                            fi
+                            yay -S nvidia-390xx-dkms
+                            ;;
+                        *)
+                            echo "Неверный выбор версии драйвера NVIDIA."
+                            return 1
+                            ;;
+                    esac
+
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-nvidia.conf
+Section "Device"
+        Identifier "NVIDIA Card"
+        Driver "nvidia"
+        VendorName "NVIDIA Corporation"
+EndSection
+EOF
+                    ;;
+                *)
+                    echo "Неверный выбор драйвера NVIDIA."
+                    return 1
+                    ;;
+            esac
+            ;;
+        3)
+            # AMD
+            echo "Выберите драйвер AMD:"
+            echo "1. AMDGPU (Открытый)"
+            echo "2. ATI (Открытый)"
+            echo "3. AMDGPU PRO (Проприетарный)"
+            read -p "Ваш выбор: " amd_driver_choice
+
+            case $amd_driver_choice in
+                1)
+                    # AMDGPU
+                    sudo pacman -S xf86-video-amdgpu
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+Section "OutputClass"
+     Identifier "AMD"
+     MatchDriver "amdgpu"
+     Driver "amdgpu"
+     Option "DRI" "3"
+EndSection
+EOF
+                    ;;
+                2)
+                    # ATI
+                    sudo pacman -S xf86-video-ati
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-radeon.conf
+Section "OutputClass"
+    Identifier "Radeon"
+    MatchDriver "radeon"
+    Driver "radeon"
+    Option "DRI" "3"
+EndSection
+EOF
+                    ;;
+                3)
+                    # AMDGPU PRO
+                    sudo pacman -S xf86-video-amdgpu
+                    cat <<EOF | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+Section "OutputClass"
+     Identifier "AMD"
+     MatchDriver "amdgpu"
+     Driver "amdgpu"
+     Option "DRI" "3"
+EndSection
+EOF
+                    ;;
+                *)
+                    echo "Неверный выбор драйвера AMD."
+                    return 1
+                    ;;
+            esac
+            ;;
+        *)
+            echo "Неверный выбор видеокарты."
+            return 1
+            ;;
+    esac
 
     # Конфигурация Xorg
     sudo Xorg :3 -configure
@@ -403,20 +595,35 @@ vaapi_configuration() {
             ;;
         2)
             # NVIDIA VA-API
-            if ! command -v yay &> /dev/null; then
-                echo "Yay не установлен. Попытка сборки..."
-                build_yay
-                if ! command -v yay &> /dev/null; then
-                    echo "Ошибка: не удалось установить yay."
-                    return 1
-                fi
-            fi
-            yay -S nouveau-fw
-            if [ $? -eq 0 ]; then
-                echo "Установка nouveau-fw завершена."
-            else
-                echo "Ошибка при установке nouveau-fw."
-            fi
+            echo "Хотите установить nouveau-fw?"
+            echo "1. Нет"
+            echo "2. Да"
+            read -p "Ваш выбор: " nouveaufw
+
+            case $nouveaufw in
+                1)
+                    ;;
+                2)
+                    # Установка nouveau-fw
+                    if ! command -v yay &> /dev/null; then
+                        echo "Yay не установлен. Попытка сборки..."
+                        build_yay
+                        if ! command -v yay &> /dev/null; then
+                            echo "Ошибка: не удалось установить yay."
+                            return 1
+                        fi
+                    fi
+                    yay -S nouveau-fw
+                    if [ $? -eq 0 ]; then
+                        echo "Установка nouveau-fw завершена."
+                    else
+                        echo "Ошибка при установке nouveau-fw."
+                    fi
+                    ;;
+                *)
+                    echo "Неверный выбор nouveau-fw"
+                    ;;
+            esac
             ;;
         3)
             # AMD VA-API
