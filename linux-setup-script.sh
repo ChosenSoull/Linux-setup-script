@@ -8,12 +8,12 @@ fi
 
 # Функция для установки пакетов из директории
 install_Plasma() {
-echo "Выберите способ установки KDE Plasma"
+    echo "Выберите способ установки KDE Plasma"
     echo "1. Установить из репозитория"
-    echo "2. Установить Plasma 6.2.5 (НЕРАБОТАЕТ)"
+    echo "2. Установить Plasma из архива Arch Linux"
     read -p "Ваш выбор: " choice
 
-case $choice in
+    case $choice in
         1)
             # Установка из репозитория
             sudo pacman -S plasma --noconfirm
@@ -24,35 +24,270 @@ case $choice in
             fi
             ;;
         2)
-        # Указываем директорию с пакетами
-        PACKAGE_DIR="Plasma6.2.5"
-            # Проверка, существует ли указанная папка
-            if [ ! -d "files/$PACKAGE_DIR" ]; then
-                echo "Ошибка: папка '$PACKAGE_DIR' не найдена."
-                return 1
-            fi
-
-            # Переходим в указанную папку
-            cd "files/$PACKAGE_DIR"
-
-            # Собираем список пакетов
-            PACKAGES=$(find . -maxdepth 1 -type f -name "*.pkg.tar.*" -print0 | xargs -0)
-
-            # Устанавливаем все пакеты одной командой
-            if [ -n "$PACKAGES" ]; then
-                sudo pacman -U $PACKAGES
-                echo "Установка пакетов из $PACKAGE_DIR завершена."
-            else
-                echo "В папке '$PACKAGE_DIR' не найдено пакетов для установки."
-            fi
-
-            # Возвращаемся в исходную директорию
-            cd "$ORIGINAL_DIR"
+            # Установка из архива Arch Linux
+            install_plasma_from_archive_one_click
             ;;
         *)
             echo "Неверный выбор. Установка KDE Plasma отменена."
             ;;
     esac
+}
+
+install_plasma_from_archive_one_click() {
+echo "Выберите версию KDE Plasma для установки из архива Arch Linux:"
+echo "1. Plasma 6.3.2"
+echo "2. Plasma 6.2.5" # Пример Plasma 5
+read -p "Ваш выбор: " versionPlasma
+
+    # Объявляем ассоциативный массив для версий пакетов
+    declare -A plasma_package_versions
+
+    case "$versionPlasma" in
+        1)
+            plasma_version_name="6.3.2" # Для отображения пользователю
+            # Заполняем массив plasma_package_versions для Plasma 6.3.2
+            plasma_package_versions=(
+                ["kwayland"]="6.3.2-1"
+                ["kactivitymanagerd"]="6.3.2-1"
+                ["libkscreen"]="6.3.2-1"
+                ["plasma-activities"]="6.3.2-1"
+                ["plasma-activities-stats"]="6.3.2-1"
+                ["libplasma"]="6.3.2-1"
+                ["kscreenlocker"]="6.3.2-1"
+                ["kdecoration"]="6.3.2-1"
+                ["oxygen"]="6.3.2-1"
+                ["breeze"]="6.3.2-1"
+                ["kglobalacceld"]="6.3.2-1"
+                ["libksysguard"]="6.3.2-1"
+                ["ksystemstats"]="6.3.2-1"
+                ["milou"]="6.3.2-1"
+                ["ocean-sound-theme"]="6.3.2-1-any"
+                ["oxygen-sounds"]="6.3.2-1-any"
+                ["plasma5-integration"]="6.3.2-1"
+                ["kpipewire"]="6.3.2-1"
+                ["plasma5support"]="6.3.2-1"
+                ["kde-cli-tools"]="6.3.2-1"
+                ["systemsettings"]="6.3.2-1"
+                ["kinfocenter"]="6.3.2-1"
+                ["kmenuedit"]="6.3.2-1"
+                ["powerdevil"]="6.3.2-1"
+                ["polkit-kde-agent"]="6.3.2-1"
+                ["bluedevil"]="1:6.3.2-1"
+                ["breeze-gtk"]="6.3.2-1-any"
+                ["breeze-plymouth"]="6.3.2-1"
+                ["discover"]="6.3.2-1"
+                ["drkonqi"]="6.3.2-1"
+                ["flatpak-kcm"]="6.3.2-1"
+                ["kde-gtk-config"]="6.3.2-1"
+                ["kgamma"]="6.3.2-1"
+                ["krdp"]="6.3.2-1"
+                ["kscreen"]="6.3.2-1"
+                ["ksshaskpass"]="6.3.2-1"
+                ["kwallet-pam"]="6.3.2-1"
+                ["kwrited"]="6.3.2-1"
+                ["plasma-browser-integration"]="6.3.2-1"
+                ["plasma-disks"]="6.3.2-1"
+                ["plasma-firewall"]="6.3.2-1"
+                ["plasma-nm"]="6.3.2-1"
+                ["plasma-pa"]="6.3.2-1"
+                ["plasma-sdk"]="6.3.2-1"
+                ["plasma-systemmonitor"]="6.3.2-1"
+                ["plasma-thunderbolt"]="6.3.2-1"
+                ["plasma-vault"]="6.3.2-1"
+                ["plasma-welcome"]="6.3.2-1"
+                ["plasma-workspace-wallpapers"]="6.3.2-1-any"
+                ["plymouth-kcm"]="6.3.2-1"
+                ["print-manager"]="1:6.3.2-1"
+                ["qqc2-breeze-style"]="6.3.2-1"
+                ["sddm-kcm"]="6.3.2-1"
+                ["wacomtablet"]="6.3.2-1"
+                ["xdg-desktop-portal-kde"]="6.3.2-1"
+                ["spectacle"]="24.12.1-1"
+                ["kwin"]="6.3.2.1-5"
+                ["layer-shell-qt"]="6.3.2-2"
+                ["plasma-workspace"]="6.3.2-1"
+                ["plasma-desktop"]="6.3.2-1"
+                ["kdeplasma-addons"]="6.3.2-1"
+            )
+            ;;
+        2)
+            plasma_version_name="6.2.5" # Для отображения пользователю
+            # Заполняем массив plasma_package_versions для Plasma 5.27.10
+            plasma_package_versions=(
+                ["kwayland"]="6.2.5-1"
+                ["kactivitymanagerd"]="6.2.5-1"
+                ["libkscreen"]="6.2.5-1"
+                ["plasma-activities"]="6.2.5-1"
+                ["plasma-activities-stats"]="6.2.5-1"
+                ["libplasma"]="6.2.5-1"
+                ["kscreenlocker"]="6.2.5-1"
+                ["kdecoration"]="6.2.5-1"
+                ["oxygen"]="6.2.5-1"
+                ["breeze"]="6.2.5-1"
+                ["kglobalacceld"]="6.2.5-1"
+                ["libksysguard"]="6.2.5-1"
+                ["ksystemstats"]="6.2.5-1"
+                ["milou"]="6.2.5-1"
+                ["ocean-sound-theme"]="6.2.5-1-any"
+                ["oxygen-sounds"]="6.2.5-1-any"
+                ["plasma5-integration"]="6.2.5-1"
+                ["kpipewire"]="6.2.5-1"
+                ["plasma5support"]="6.2.5-1"
+                ["kde-cli-tools"]="6.2.5-1"
+                ["systemsettings"]="6.2.5-1"
+                ["kinfocenter"]="6.2.5-1"
+                ["kmenuedit"]="6.2.5-1"
+                ["powerdevil"]="6.2.5-1"
+                ["polkit-kde-agent"]="6.2.5-1"
+                ["bluedevil"]="1:6.2.5-1"
+                ["breeze-gtk"]="6.2.5-1-any"
+                ["breeze-plymouth"]="6.2.5-1"
+                ["discover"]="6.2.5-1"
+                ["drkonqi"]="6.2.5-1"
+                ["flatpak-kcm"]="6.2.5-1"
+                ["kde-gtk-config"]="6.2.5-1"
+                ["kgamma"]="6.2.5-1"
+                ["krdp"]="6.2.5-1"
+                ["kscreen"]="6.2.5-1"
+                ["ksshaskpass"]="6.2.5-1"
+                ["kwallet-pam"]="6.2.5-1"
+                ["kwrited"]="6.2.5-1"
+                ["plasma-browser-integration"]="6.2.5-1"
+                ["plasma-disks"]="6.2.5-1"
+                ["plasma-firewall"]="6.2.5-1"
+                ["plasma-nm"]="6.2.5-1"
+                ["plasma-pa"]="6.2.5-1"
+                ["plasma-sdk"]="6.2.5-1"
+                ["plasma-systemmonitor"]="6.2.5-1"
+                ["plasma-thunderbolt"]="6.2.5-1"
+                ["plasma-vault"]="6.2.5-1"
+                ["plasma-welcome"]="6.2.5-1"
+                ["plasma-workspace-wallpapers"]="6.2.5-1-any"
+                ["plymouth-kcm"]="6.2.5-1"
+                ["print-manager"]="1:6.2.5-1"
+                ["qqc2-breeze-style"]="6.2.5-1"
+                ["sddm-kcm"]="6.2.5-1"
+                ["wacomtablet"]="6.2.5-1"
+                ["xdg-desktop-portal-kde"]="6.2.5-1"
+                ["spectacle"]="24.12.1-1"
+                ["kwin"]="6.2.5-3"
+                ["layer-shell-qt"]="6.2.5-3"
+                ["plasma-workspace"]="6.2.5-2"
+                ["plasma-desktop"]="6.2.5-2"
+                ["kdeplasma-addons"]="6.2.5-2"
+            )
+            ;;
+        *)
+            echo "Неверный выбор версии. Установка отменена."
+            return 1
+            ;;
+    esac
+
+    # Проверяем наличие wget и устанавливаем, если его нет (как и раньше)
+    if ! command -v wget &> /dev/null; then
+        echo "wget не найден. Установка wget..."
+        sudo pacman -S wget --noconfirm
+        if [ $? -ne 0 ]; then
+            echo "Ошибка при установке wget. Установка прервана."
+            return 1
+        fi
+    fi
+    
+    local arch="x86_64"
+
+    # Создаем директорию files, если её нет (как и раньше)
+    mkdir -p "files"
+
+    # Создаем директорию для загрузки пакетов, если её нет (как и раньше), но теперь используем имя версии Plasma
+    mkdir -p "files/Plasma-$plasma_version_name"
+
+    # Переходим в директорию files (как и раньше)
+    cd "files"
+
+    # Переходим в директорию для загрузки пакетов (как и раньше), но теперь используем имя версии Plasma
+    pushd "Plasma-$plasma_version_name"
+
+    # Запрос на подтверждение (как и раньше)
+    read -p "Начать установку Plasma $plasma_version_name из архива Arch Linux? (y/n): " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "Установка отменена."
+        popd
+        cd "$ORIGINAL_DIR"
+        return 0
+    fi
+
+    # Загружаем пакеты (теперь с использованием точных версий из plasma_package_versions)
+    no_arch_packages=( # Объявляем массив 'no_arch_packages' (черный список) вне цикла, например, в начале функции
+        "breeze-gtk"
+        "plasma-workspace-wallpapers"
+        "ocean-sound-theme"
+        "oxygen-sounds"
+    # Добавьте сюда другие пакеты, если нужно
+    )
+
+    for pkg in "${!plasma_package_versions[@]}"; do # Используем цикл по ключам plasma_package_versions, как вы просили
+
+        local package_version="${plasma_package_versions[$pkg]}" # Получаем точную версию пакета из массива
+
+        if [[ -z "$package_version" ]]; then
+            echo "Ошибка: Версия для пакета '$pkg' не найдена в plasma_package_versions для Plasma $plasma_version_name. Установка прервана."
+            popd
+            cd "$ORIGINAL_DIR"
+            return 1
+        fi
+
+        local url="https://archive.archlinux.org/packages/${pkg:0:1}/$pkg/$pkg-$package_version" # Формируем начало URL без архитектуры
+
+        # Проверяем, есть ли пакет в черном списке no_arch_packages
+        local is_noarch=false
+        for no_arch_pkg in "${no_arch_packages[@]}"; do
+            # ---  Усиленный отладочный вывод внутри цикла  ---
+            echo "DEBUG:   Сравнение:  Текущий пакет pkg=$(printf %q "$pkg"), Пакет из черного списка no_arch_pkg=$(printf %q "$no_arch_pkg")"
+            if [[ "$pkg" == "$no_arch_pkg" ]]; then
+                is_noarch=true
+                echo "DEBUG:   !!! Совпадение найдено: Пакет '$pkg' == '$no_arch_pkg'. Пакет '$pkg' найден в черном списке."
+                break
+            fi
+        done
+
+        if [[ "$is_noarch" == "false" ]]; then  # Проверяем, является ли is_noarch "false" (пустой строкой)
+            echo "DEBUG: Пакет '$pkg' НЕ в черном списке. is_noarch = false" # Теперь "false" ветка выполняется, если is_noarch "false"
+            url+="-$arch.pkg.tar.zst" # Если is_noarch = false (не в черном списке), добавляем архитектуру
+        else # else ветка выполняется, если is_noarch "true" (не пустая строка)
+            echo "DEBUG: Пакет '$pkg' IS в черном списке. is_noarch = true" # Теперь "true" ветка выполняется, если is_noarch "true"
+            url+=".pkg.tar.zst" # Если is_noarch = true (в черном списке), НЕ добавляем архитектуру
+        fi
+
+        echo "Загрузка $pkg-$package_version..."
+        wget "$url"
+        if [ $? -ne 0 ]; then
+            echo "Ошибка при загрузке $pkg. Установка прервана."
+            popd
+            cd "$ORIGINAL_DIR"
+            return 1
+        fi
+    done
+
+    # Устанавливаем пакеты (как и раньше)
+    echo "Установка пакетов..."
+    sudo pacman -U *.pkg.tar.zst --noconfirm
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при установке пакетов. Установка прервана."
+        popd
+        cd "$ORIGINAL_DIR"
+        return 1
+    fi
+
+    echo "Установка Plasma $plasma_version_name из архива Arch Linux завершена."
+
+    # Возвращаемся в исходную директорию (как и раньше)
+    popd
+
+    # Удаляем временную директорию (как и раньше)
+    rm -rf "Plasma-$plasma_version_name"
+
+    # Возвращаемся в исходную директорию (как и раньше)
+    cd "$ORIGINAL_DIR"
 }
 
 install_Gnome() {
