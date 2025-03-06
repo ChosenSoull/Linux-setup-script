@@ -32,16 +32,12 @@
 
 -   `linux-setup-script.sh`: Основной скрипт.
 -   `files/`: Директория для локальных пакетов и исходников.
-    -   `Plasma6.2.5/`: Локальные пакеты для KDE Plasma 6.2.5.
+    -   `PlasmaVERSION/`: Локальные пакеты для KDE Plasma
     -   `Gnome/`: Локальные пакеты для Gnome.
     -   `XFCE/`: Локальные пакеты для XFCE.
     -   `yay/`: Исходники yay (для сборки из AUR).
     -   `intel-vaapi-driver/`: Исходники драйвера Intel VA-API.
     -   `media-driver/`: Исходники Intel Media Driver.
-
-## Настройка
-
--   Локальные пакеты для KDE Plasma, Gnome и XFCE должны быть размещены в соответствующих директориях внутри `files/`.
 
 ## Известные проблемы
 
