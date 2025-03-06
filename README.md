@@ -5,7 +5,7 @@
 
 ## Возможности
 
--   Установка KDE Plasma, Gnome и XFCE из репозитория или локальных пакетов.
+-   Установка KDE Plasma, Gnome и XFCE из репозитория или архива.
 -   Настройка pacman.conf и обновление баз данных.
 -   Установка дополнительных пакетов (Firefox, Dolphin, Steam, Wine и др.).
 -   Установка пакетов для разработчиков (GitHub Desktop, VS Code).
@@ -16,10 +16,10 @@
 
 ## Использование
 
-1.  Сохраните скрипт в файл `linux-setup-script.sh`.
-2.  Сделайте скрипт исполняемым: `chmod +x linux-setup-script.sh`.
-3.  Запустите скрипт: `./linux-setup-script.sh`.
-4.  Следуйте инструкциям на экране.
+1. Загрузите скрипт. git clone https://github.com/ChosenSoull/Linux-setup-script/tree/main
+2. Зайдите в директорию Linux-setup-script. cd Linux-setup-script
+3. Запустить скрипт Linux-setup-script. ./linux-setup-script.sh
+4. Все готово
 
 ## Требования
 
@@ -45,7 +45,7 @@
 
 ## Известные проблемы
 
--   Установка KDE Plasma 6.2.5, Gnome и XFCE из локальных пакетов может не работать из-за зависимостей.
+-   Установка Gnome и XFCE из архива может не работать. :(
 
 ## Лицензия
 
